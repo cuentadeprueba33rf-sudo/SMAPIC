@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SMAPic - Powered by SAM IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-color: #030303;
+        --card-bg: rgba(255, 255, 255, 0.03);
+        --neon-pink: #ff2e63;
+        --neon-cyan: #08d9d6;
+      }
+
+      body {
+        font-family: 'Outfit', sans-serif;
+        background-color: var(--bg-color); 
+        color: #e3e3e3;
+        overflow: hidden; /* Prevent body scroll, handle in app */
+      }
+      
+      /* Film Grain Texture - The "Pro" Touch */
+      .noise-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.035;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* Ambient Glow Blobs */
+      .ambient-glow {
+        position: fixed;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(255,46,99,0.08) 0%, rgba(8,217,214,0.05) 50%, transparent 70%);
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: -1;
+        animation: float 20s infinite ease-in-out;
+      }
+      
+      .glow-1 { top: -20%; left: -10%; animation-delay: 0s; }
+      .glow-2 { bottom: -20%; right: -10%; background: radial-gradient(circle, rgba(120, 50, 255, 0.08) 0%, transparent 70%); animation-delay: -5s; }
+
+      @keyframes float {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(30px, -30px) scale(1.1); }
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1); 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.2); 
+      }
+
+      /* Typography Utilities */
+      .font-mono-space {
+        font-family: 'Space Grotesk', monospace;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); filter: blur(10px); }
+        to { opacity: 1; transform: translateY(0); filter: blur(0); }
+      }
+      
+      .animate-fade-in {
+        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .glass-panel {
+        background: rgba(10, 10, 10, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+      }
+
+      .input-glow:focus-within {
+        box-shadow: 0 0 30px -5px rgba(255, 46, 99, 0.15), inset 0 0 20px -10px rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div class="noise-overlay"></div>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div id="root"></div>
+  </body>
+</html>
