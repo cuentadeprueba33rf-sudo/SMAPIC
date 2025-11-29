@@ -13,6 +13,14 @@ type EngineType = 'HTL-1' | 'Qwalc-3' | 'Snapic-gen3';
 
 const LOCAL_STORAGE_KEY = 'SMAPIC_DATA_V1';
 
+// Robust ID Generator (Safe for all environments)
+const uuid = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
 const App: React.FC = () => {
   // --- STATE INITIALIZATION (Lazy load from LocalStorage) ---
   
@@ -100,12 +108,12 @@ const App: React.FC = () => {
     // STRICT IMAGE POLICY CHECK
     if (attachments.length === 0) {
       const userMsg: Message = {
-        id: crypto.randomUUID(),
+        id: uuid(),
         role: 'user',
         text: userText,
       };
       const rejectionMsg: Message = {
-        id: crypto.randomUUID(),
+        id: uuid(),
         role: 'model',
         text: "⚠️ **Archivo Requerido**\n\nPor favor ingresa tu imagen primero. Mi arquitectura no me permite procesar solicitudes de texto sin una referencia visual (\"ingrediente\").",
       };
@@ -118,7 +126,7 @@ const App: React.FC = () => {
     
     // Create User Message
     const userMsg: Message = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       role: 'user',
       text: userText,
       image: currentAttachments.length > 0 ? `data:${currentAttachments[0].mimeType};base64,${currentAttachments[0].data}` : undefined // Preview first image in chat bubble for context
@@ -135,7 +143,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
+        id: uuid(),
         role: 'model',
         text: "⚠️ Error de conexión de los motores en la nube ☁️. Intenta más tarde.",
         isError: true
@@ -165,7 +173,7 @@ const App: React.FC = () => {
       try {
         const base64 = await blobToBase64(file);
         newAttachments.push({
-          id: crypto.randomUUID(),
+          id: uuid(),
           data: base64,
           mimeType: file.type
         });

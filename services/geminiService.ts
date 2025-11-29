@@ -26,6 +26,14 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
+// Robust ID Generator (Safe for all environments)
+const uuid = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
 /**
  * Handles Image Editing using gemini-2.5-flash-image
  * Implements a Multi-Key Fallback System
@@ -107,7 +115,7 @@ export const editImage = async (
 
       // SUCCESS: Return the message and break the loop
       return {
-        id: crypto.randomUUID(),
+        id: uuid(),
         role: 'model',
         // If we have an image, we try to suppress text unless it's critical.
         text: newImageBase64 ? (responseText?.length && responseText.length < 50 ? responseText : undefined) : responseText,
@@ -158,7 +166,7 @@ export const editImage = async (
   }
 
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     role: 'model',
     text: userMessage,
     isError: true
