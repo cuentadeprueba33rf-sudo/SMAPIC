@@ -1,12 +1,9 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
-// List of API Keys for fallback redundancy (Newest First)
+// Single API Key configuration as requested
 const API_KEYS = [
-  "AIzaSyAC2-AuJ8cVZMWFW-ekhgaU7k6h6oWC_n4", // Priority: New Temporary Key
-  "AIzaSyAenNBpLkd70YYe9ABeuXvfnSfCXUuTQvQ", // Backup 1
-  "AIzaSyChZdHISBYnyE6RTjfL9qWIVxnrnUa-VSE", // Backup 2
-  "AIzaSyD5JryzPYKo08GEAOQjAavAqT6gXF9svms"  // Backup 3
+  "AIzaSyAC2-AuJ8cVZMWFW-ekhgaU7k6h6oWC_n4"
 ];
 
 // Helper to convert Blob to Base64
@@ -37,7 +34,6 @@ const uuid = () => {
 
 /**
  * Handles Image Editing using gemini-2.5-flash-image
- * Implements a Multi-Key Fallback System
  */
 export const editImage = async (
   images: Array<{ data: string; mimeType: string }>,
@@ -55,14 +51,10 @@ export const editImage = async (
 
   const fullPrompt = `[SYSTEM: You are SMAPic. ${engineInstruction} DO NOT CONVERSE. JUST EDIT/GENERATE.] ${prompt}`;
 
-  // Loop through available API keys
+  // Loop through available API keys (Now only 1)
   for (let i = 0; i < API_KEYS.length; i++) {
     const apiKey = API_KEYS[i];
     try {
-      if (i > 0) {
-        console.log(`⚠️ Primary key failed. Switching to backup key #${i}...`);
-      }
-      
       const ai = new GoogleGenAI({ apiKey });
       
       // Construct parts: Images first, then text prompt
@@ -117,7 +109,7 @@ export const editImage = async (
         throw new Error("Empty response content parts from model");
       }
 
-      // SUCCESS: Return the message and break the loop
+      // SUCCESS: Return the message
       return {
         id: uuid(),
         role: 'model',
@@ -127,30 +119,15 @@ export const editImage = async (
       };
 
     } catch (error: any) {
-      console.warn(`Key ...${apiKey.slice(-4)} failed:`, error);
+      console.warn(`API Request failed:`, error);
       lastError = error;
-      
-      const errString = error.toString().toLowerCase();
-      
-      // CRITICAL ERRORS: Do NOT retry on other keys (waste of time/resources)
-      
-      // 1. Safety / Policy Errors
-      if (errString.includes("safety") || errString.includes("seguridad") || errString.includes("blocked")) {
-         break; 
-      }
-      
-      // 2. Client Errors (400) - Invalid Request/Image
-      // If the request is bad, it will be bad for all keys.
-      if (errString.includes("400") || errString.includes("invalid argument")) {
-         break;
-      }
-      
-      // Continue loop only for: Network, 429 (Quota), 500s, 503, etc.
+      // Since there is only 1 key, we break immediately on error
+      break; 
     }
   }
 
-  // If we exhaust all keys or hit a hard stop (safety), handle the last error
-  console.error("All API keys failed or Safety Block triggered.", lastError);
+  // Handle errors if the single key failed
+  console.error("API request failed.", lastError);
     
   let userMessage = "";
   const errString = lastError ? lastError.toString().toLowerCase() : "unknown error";
@@ -163,23 +140,23 @@ export const editImage = async (
   else if (errString.includes("400") || errString.includes("invalid argument")) {
       userMessage = "⚠️ Error de Solicitud: La imagen proporcionada no es válida o el formato no es compatible.";
   }
-  // 3. Network / API Errors (Cloud Connection) - Only if ALL keys failed
+  // 3. Network / API Errors 
   else if (
       errString.includes("fetch failed") || 
       errString.includes("network") || 
       errString.includes("503") || 
       errString.includes("500") ||
-      errString.includes("429") // Rate limit
+      errString.includes("429") 
   ) {
-      userMessage = "⚠️ Error de conexión de los motores en la nube ☁️. \n\nTodos los sistemas de respaldo intentaron procesar tu solicitud pero están saturados. Por favor intenta más tarde.";
+      userMessage = "⚠️ Error de conexión con el motor en la nube ☁️. Por favor intenta más tarde.";
   } 
   // 4. Empty Response / Model Confusion
   else if (errString.includes("empty response") || errString.includes("no candidates")) {
-      userMessage = `⚠️ El motor ${engine} no pudo procesar esta solicitud específica.\n\nSugerencia: Intenta reformular tu instrucción o prueba con otro motor (ej. Qwalc-3).`;
+      userMessage = `⚠️ El motor ${engine} no pudo procesar esta solicitud específica.\n\nSugerencia: Intenta reformular tu instrucción.`;
   }
   // 5. Generic / Engine Failure
   else {
-      userMessage = `❌ Error Crítico en el motor ${engine}.\n\nNo pudimos completar la renderización tras múltiples intentos.`;
+      userMessage = `❌ Error Crítico en el motor ${engine}.\n\nNo pudimos completar la renderización.`;
   }
 
   return {
