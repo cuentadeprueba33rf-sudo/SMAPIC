@@ -3,9 +3,7 @@ import { Message } from "../types";
 
 // List of API Keys for fallback redundancy
 const API_KEYS = [
-  "AIzaSyAenNBpLkd70YYe9ABeuXvfnSfCXUuTQvQ",
-  "AIzaSyChZdHISBYnyE6RTjfL9qWIVxnrnUa-VSE",
-  "AIzaSyD5JryzPYKo08GEAOQjAavAqT6gXF9svms"
+  "AIzaSyAC2-AuJ8cVZMWFW-ekhgaU7k6h6oWC_n4"
 ];
 
 // Helper to convert Blob to Base64
