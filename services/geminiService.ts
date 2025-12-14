@@ -1,9 +1,12 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
-// List of API Keys for fallback redundancy
+// List of API Keys for fallback redundancy (Newest First)
 const API_KEYS = [
-  "AIzaSyAC2-AuJ8cVZMWFW-ekhgaU7k6h6oWC_n4"
+  "AIzaSyAC2-AuJ8cVZMWFW-ekhgaU7k6h6oWC_n4", // Priority: New Temporary Key
+  "AIzaSyAenNBpLkd70YYe9ABeuXvfnSfCXUuTQvQ", // Backup 1
+  "AIzaSyChZdHISBYnyE6RTjfL9qWIVxnrnUa-VSE", // Backup 2
+  "AIzaSyD5JryzPYKo08GEAOQjAavAqT6gXF9svms"  // Backup 3
 ];
 
 // Helper to convert Blob to Base64
@@ -53,9 +56,12 @@ export const editImage = async (
   const fullPrompt = `[SYSTEM: You are SMAPic. ${engineInstruction} DO NOT CONVERSE. JUST EDIT/GENERATE.] ${prompt}`;
 
   // Loop through available API keys
-  for (const apiKey of API_KEYS) {
+  for (let i = 0; i < API_KEYS.length; i++) {
+    const apiKey = API_KEYS[i];
     try {
-      console.log(`Attempting generation with key ending in ...${apiKey.slice(-4)}`);
+      if (i > 0) {
+        console.log(`⚠️ Primary key failed. Switching to backup key #${i}...`);
+      }
       
       const ai = new GoogleGenAI({ apiKey });
       
@@ -124,13 +130,22 @@ export const editImage = async (
       console.warn(`Key ...${apiKey.slice(-4)} failed:`, error);
       lastError = error;
       
-      // If it's a Safety error, don't try other keys, as the result will be the same.
       const errString = error.toString().toLowerCase();
+      
+      // CRITICAL ERRORS: Do NOT retry on other keys (waste of time/resources)
+      
+      // 1. Safety / Policy Errors
       if (errString.includes("safety") || errString.includes("seguridad") || errString.includes("blocked")) {
          break; 
       }
       
-      // Otherwise (Network, Quota, 500s), continue to next key in loop...
+      // 2. Client Errors (400) - Invalid Request/Image
+      // If the request is bad, it will be bad for all keys.
+      if (errString.includes("400") || errString.includes("invalid argument")) {
+         break;
+      }
+      
+      // Continue loop only for: Network, 429 (Quota), 500s, 503, etc.
     }
   }
 
@@ -144,7 +159,11 @@ export const editImage = async (
   if (errString.includes("safety") || errString.includes("seguridad") || errString.includes("blocked")) {
       userMessage = "⚠️ Bloqueo de Seguridad: La imagen o el prompt infringen nuestras normas de contenido.";
   } 
-  // 2. Network / API Errors (Cloud Connection) - Only if ALL keys failed
+  // 2. Client Errors
+  else if (errString.includes("400") || errString.includes("invalid argument")) {
+      userMessage = "⚠️ Error de Solicitud: La imagen proporcionada no es válida o el formato no es compatible.";
+  }
+  // 3. Network / API Errors (Cloud Connection) - Only if ALL keys failed
   else if (
       errString.includes("fetch failed") || 
       errString.includes("network") || 
@@ -152,13 +171,13 @@ export const editImage = async (
       errString.includes("500") ||
       errString.includes("429") // Rate limit
   ) {
-      userMessage = "⚠️ Error de conexión de los motores en la nube ☁️. \n\nTodos los sistemas de respaldo intentaron procesar tu solicitud pero no responden. Por favor intenta más tarde.";
+      userMessage = "⚠️ Error de conexión de los motores en la nube ☁️. \n\nTodos los sistemas de respaldo intentaron procesar tu solicitud pero están saturados. Por favor intenta más tarde.";
   } 
-  // 3. Empty Response / Model Confusion
+  // 4. Empty Response / Model Confusion
   else if (errString.includes("empty response") || errString.includes("no candidates")) {
       userMessage = `⚠️ El motor ${engine} no pudo procesar esta solicitud específica.\n\nSugerencia: Intenta reformular tu instrucción o prueba con otro motor (ej. Qwalc-3).`;
   }
-  // 4. Generic / Engine Failure
+  // 5. Generic / Engine Failure
   else {
       userMessage = `❌ Error Crítico en el motor ${engine}.\n\nNo pudimos completar la renderización tras múltiples intentos.`;
   }
